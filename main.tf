@@ -20,10 +20,6 @@ locals {
 terraform {
   required_providers {
     google = {
-      source = "hashicorp/google"
-      version = "4.43.0"
-    }
-    google-beta = {
       source  = "hashicorp/google-beta"
       version = "4.34.0"
     }
@@ -45,8 +41,6 @@ resource "google_storage_bucket_object" "tf_state_folder" {
 
 # GKE Cluster
 resource "google_container_cluster" "gitlab_runners" {
-  provider = google-beta
-
   name                          = "gitlab-runners"
   network                       = local.network
   subnetwork                    = local.subnetwork
@@ -100,10 +94,6 @@ resource "google_container_cluster" "gitlab_runners" {
   }
 
   vertical_pod_autoscaling {
-    enabled = true
-  }
-
-  identity_service_config {
     enabled = true
   }
 }
