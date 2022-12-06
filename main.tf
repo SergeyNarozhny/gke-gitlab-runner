@@ -8,6 +8,9 @@ locals {
   location = "europe-west1" # the cheapest one
   subnetwork = "common-gitlab-gke-ew1"
   master_ipv4_cidr_block = "10.157.211.0/28"
+
+  pods_cidr_range = "10.76.0.0/14"
+  services_cidr_range = "10.80.0.0/20"
   master_authorized_networks_cidr_blocks = [
     {
       display_name = "All internal network"
@@ -73,6 +76,8 @@ resource "google_container_cluster" "gitlab_runners" {
   }
 
   ip_allocation_policy {
+    cluster_ipv4_cidr_block = local.pods_cidr_range
+    services_ipv4_cidr_block = local.services_cidr_range
   }
 
   monitoring_config {
