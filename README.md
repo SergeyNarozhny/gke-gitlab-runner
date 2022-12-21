@@ -44,3 +44,10 @@ kubectl apply -f gitlab-runners-kube-dns-configmap.yaml
 helm install --namespace gitlab-runners gitlab-runner -f gitlab-runners-chart-values.yaml gitlab/gitlab-runner
 ```
 Если нужно, корректируем настройки gitlab-runners-chart-values.yaml по доке https://docs.gitlab.com/runner/configuration/advanced-configuration.html
+
+## Troubleshooting
+В случае если какие-либо раннеры вне GKE пытаются запустить джобы через контейнеры GKE, нужно ограничить _Environment scope_ на странице интеграции с GKE в Gitlab: https://gitlab.fbs-d.com/admin/clusters/1?tab=details, а затем почистить кеш в Advanced settings.
+Если это не помогает, нужно удалить неймспейсы, все еще привязанные к джобам. Например, если пайплайн oauth продолжает запускаться через раннеры GKE, хотя не должен по environment scope, следует удалить его неймспейс из GKE-кластера:
+```
+kubectl get ns --no-headers | awk /oauth-/'{print $1}' | xargs kubectl delete ns
+```
