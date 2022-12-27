@@ -6,6 +6,7 @@ locals {
   project = "fbs-prod"
   network = "common"
   location = "europe-west1" # the cheapest one
+  location_zones = ["europe-west1-b", "europe-west1-d", "europe-west1-c"]
   subnetwork = "common-gitlab-gke-ew1"
   master_ipv4_cidr_block = "10.157.211.0/28"
 
@@ -17,7 +18,7 @@ locals {
       cidr_block   = "10.0.0.0/8"
     }
   ]
-  machine_type = "e2-standard-4"
+  machine_type = "e2-custom-4-8192" // 4vCPU 8G
 }
 
 terraform {
@@ -40,6 +41,36 @@ resource "google_storage_bucket_object" "tf_state_folder" {
   name          = local.tf_bucket_path
   bucket        = local.tf_bucket
   content       = "test"
+}
+
+# Gitlab-runners cache bucket with SA
+resource "google_storage_bucket" "gitlab_runners_cache" {
+  name          = "fbs-prod-gitlab-runners-cache"
+  storage_class = "MULTI_REGIONAL"
+  location      = "EU"
+  uniform_bucket_level_access = true
+}
+resource "google_service_account" "gitlab_runners_sa" {
+  account_id   = "gitlab-runners-cache-sa"
+}
+data "google_iam_policy" "storage_policy" {
+  binding {
+    role = "roles/storage.admin"
+    members = [
+      "serviceAccount:${google_service_account.gitlab_runners_sa.email}",
+      "projectEditor:fbs-prod",
+    ]
+  }
+  binding {
+    role = "roles/storage.objectViewer"
+    members = [
+      "projectViewer:fbs-prod",
+    ]
+  }
+}
+resource "google_storage_bucket_iam_policy" "gitlab_runners_cache_policy" {
+  bucket = google_storage_bucket.gitlab_runners_cache.name
+  policy_data = data.google_iam_policy.storage_policy.policy_data
 }
 
 # GKE Cluster
@@ -109,9 +140,15 @@ resource "google_container_cluster" "gitlab_runners" {
 
 resource "google_container_node_pool" "gitlab_runners_node_pool" {
   name       = "gitlab-runners-node-pool"
-  location   = local.location
   cluster    = google_container_cluster.gitlab_runners.name
-  node_count = 3
+
+  location   = local.location
+  node_locations = local.location_zones
+
+  autoscaling {
+    min_node_count = 1
+    max_node_count = 20
+  }
 
   node_config {
     preemptible     = true
@@ -131,6 +168,8 @@ resource "google_container_node_pool" "gitlab_runners_node_pool" {
         app = "gitlab"
         role = "runner"
     }
+
+    tags = ["gitlab-runner", "common"]
   }
 }
 
