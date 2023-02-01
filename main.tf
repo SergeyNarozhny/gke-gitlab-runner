@@ -83,6 +83,7 @@ resource "google_container_cluster" "gitlab_runners" {
   datapath_provider             = "ADVANCED_DATAPATH"
   remove_default_node_pool      = true
   enable_intranode_visibility   = true
+  # must be set otherwise breaks the validator
   initial_node_count            = 1
 
   master_authorized_networks_config {
@@ -115,13 +116,21 @@ resource "google_container_cluster" "gitlab_runners" {
     enable_components = ["SYSTEM_COMPONENTS", "APISERVER", "CONTROLLER_MANAGER", "SCHEDULER"]
   }
 
+  maintenance_policy {
+    recurring_window {
+      start_time = "2023-01-28T21:00:00Z"
+      end_time   = "2023-01-29T21:00:00Z"
+      recurrence = "FREQ=WEEKLY;BYDAY=SA"
+    }
+  }
+
   addons_config {
     horizontal_pod_autoscaling {
       disabled = false
     }
 
     dns_cache_config {
-      enabled = true
+      enabled = false
     }
 
     gcp_filestore_csi_driver_config {
@@ -146,7 +155,7 @@ resource "google_container_node_pool" "gitlab_runners_node_pool" {
   node_locations = local.location_zones
 
   autoscaling {
-    min_node_count = 1
+    min_node_count = 3
     max_node_count = 20
   }
 
