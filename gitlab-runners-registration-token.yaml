@@ -1,8 +1,0 @@
-apiVersion: v1
-kind: Secret
-metadata:
-  name: gitlab-runners-playbooks-secret
-type: Opaque
-data:
-  runner-registration-token: "OEs3S3FrV2tiSnlhd3NvelIzS2U=" #base64 encoded registration token
-  runner-token: ""
