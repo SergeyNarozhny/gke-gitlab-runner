@@ -196,23 +196,20 @@ provider "kubernetes" {
 }
 
 # Gitlab stuff to deploy from Gitlab
-resource "kubernetes_service_account" "gitlab_service_account" {
-  metadata {
-    name = "gitlab"
-    namespace = "kube-system"
-  }
-  secret {
-    name = kubernetes_secret.gitlab_service_account_secret.metadata.0.name
-  }
-}
-resource "kubernetes_secret" "gitlab_service_account_secret" {
-  metadata {
-    name = "gitlab-sa-secret"
+resource "kubernetes_manifest" "gitlab_service_account" {
+  manifest = {
+    "apiVersion" = "v1"
+    "kind"       = "ServiceAccount"
+    "metadata" = {
+      "namespace" = "kube-system"
+      "name"      = "gitlab-agent"
+    }
+    "automountServiceAccountToken" = true
   }
 }
 resource "kubernetes_cluster_role_binding" "gitlab_role_binding" {
   metadata {
-    name = kubernetes_service_account.gitlab_service_account.metadata[0].name
+    name = "gitlab-agent-rb"
   }
   role_ref {
     api_group = "rbac.authorization.k8s.io"
@@ -221,7 +218,7 @@ resource "kubernetes_cluster_role_binding" "gitlab_role_binding" {
   }
   subject {
     kind      = "ServiceAccount"
-    name      = kubernetes_service_account.gitlab_service_account.metadata[0].name
+    name      = "gitlab-agent"
     namespace = "kube-system"
   }
 }
