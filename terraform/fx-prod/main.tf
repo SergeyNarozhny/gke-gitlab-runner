@@ -201,7 +201,7 @@ resource "kubernetes_manifest" "gitlab_service_account" {
     "apiVersion" = "v1"
     "kind"       = "ServiceAccount"
     "metadata" = {
-      "namespace" = "kube-system"
+      "namespace" = "gitlab-runner"
       "name"      = "gitlab-agent"
     }
     "automountServiceAccountToken" = true
@@ -219,6 +219,6 @@ resource "kubernetes_cluster_role_binding" "gitlab_role_binding" {
   subject {
     kind      = "ServiceAccount"
     name      = "gitlab-agent"
-    namespace = "kube-system"
+    namespace = "gitlab-runner"
   }
 }
