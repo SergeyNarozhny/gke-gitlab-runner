@@ -32,11 +32,52 @@ $ kubectl config current-context
 $ kubectl config use-context gke_fx-prod_asia-southeast2_gitlab-runners
 ```
 
-## Prepare Gitlab runner
+## Prepare Gitlab runner environment
 Дальше создаем namespace для gital runners через kubectl:
 ```
 $ kubectl create ns gitlab-runner
 ```
+Накидываем на gitlab-runners-cache-sa IAM рольку для Storage Object Owner, чтобы он мог ходить в CS бакет кеша раннера.
+Дальше создаем ключик для gitlab-runners-cache-sa и закидываем его креды в секрет **gcsaccess**:
+```
+$ kubectl create secret --namespace gitlab-runner generic gcsaccess \
+ --from-literal=gcs-access-id="YourAccessID" \
+ --from-literal=gcs-private-key="YourPrivateKey"
+```
+Дальше создаем файловые секреты:
+```
+$ kubectl create secret --namespace gitlab-runner generic gitlab-cacerts \
+ --from-file=./ca/ca-certificates.crt
+$ kubectl create secret --namespace gitlab-runner generic gitlab-ca \
+ --from-file=./ca/ca-certificates.crt
+```
+В случае если GKE Gitlab Runners развернут в другой VPC, необходимо сделать форвардинг и пиринг зоны (в случае разных VPC) для **всех** необходимых зон (gl.mx, fbs-d.com), например:
+```
+$ gcloud dns managed-zones create gl-mx \
+    --description="Forwarding zone for gl.mx" \
+    --dns-name=gl.mx \
+    --networks=fx-prod \
+    --forwarding-targets=FORWARDING_TARGETS_IP_LIST \
+    --visibility=private \
+    --project=fx-prod
+$ gcloud dns managed-zones create fbs-d \
+    --description="Forwarding zone for fbs-d.com" \
+    --dns-name=fbs-d.com \
+    --networks=fx-prod \
+    --forwarding-targets=FORWARDING_TARGETS_IP_LIST \
+    --visibility=private \
+    --project=fx-prod
+$ gcloud dns managed-zones create peer-gl-mx \
+  --description="DNS peering for gl.mx" \
+  --dns-name=gl.mx \
+  --networks=fx-prod \
+  --target-network=TARGET_NETWORK \
+  --target-project=TARGET_PROJECT \
+  --visibility=private \
+  --project=fx-prod
+```
+И разрешить фаерволом ходить с гуггловских адресов (35.199.192.0/19) на FreeIPA, как например [здесь](https://gitlab.fbs-d.com/terraform/modules/default-firewall-rules/-/blob/master/main.tf#L88).
+
 ## Start Gitlab runner agent
 Выполняем установку агента (или upgrade) - https://gitlab.fbs-d.com/infra/helms/gke-gitlab-runner, например,
 ```
