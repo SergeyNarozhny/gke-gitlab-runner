@@ -7,11 +7,11 @@ locals {
   network = "fx-prod"
   location = "asia-southeast2"
   location_zones = ["asia-southeast2-a", "asia-southeast2-b", "asia-southeast2-c"]
-  subnetwork = "?"
-  master_ipv4_cidr_block = "10.157.211.0/28"
+  subnetwork = "gitlab-gke"
+  master_ipv4_cidr_block = "10.187.34.0/28"
 
-  pods_cidr_range = "10.76.0.0/14"
-  services_cidr_range = "10.80.0.0/20"
+  pods_cidr_range = "10.187.40.0/21"
+  services_cidr_range = "10.187.48.0/21"
   master_authorized_networks_cidr_blocks = [
     {
       display_name = "All internal network"
@@ -200,6 +200,14 @@ resource "kubernetes_service_account" "gitlab_service_account" {
   metadata {
     name = "gitlab"
     namespace = "kube-system"
+  }
+  secret {
+    name = kubernetes_secret.gitlab_service_account_secret.metadata.0.name
+  }
+}
+resource "kubernetes_secret" "gitlab_service_account_secret" {
+  metadata {
+    name = "gitlab-sa-secret"
   }
 }
 resource "kubernetes_cluster_role_binding" "gitlab_role_binding" {
