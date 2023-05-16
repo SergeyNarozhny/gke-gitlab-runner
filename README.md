@@ -32,11 +32,26 @@ $ kubectl config current-context
 $ kubectl config use-context gke_fx-prod_asia-southeast2_gitlab-runners
 ```
 
-## Prepare Gitlab runner
+## Prepare Gitlab runner environment
 Дальше создаем namespace для gital runners через kubectl:
 ```
 $ kubectl create ns gitlab-runner
 ```
+Накидываем на gitlab-runners-cache-sa IAM рольку для Storage Object Owner, чтобы он мог ходить в CS бакет кеша раннера.
+Дальше создаем ключик для gitlab-runners-cache-sa и закидываем его креды в секрет **gcsaccess**:
+```
+$ kubectl create secret --namespace gitlab-runner generic gcsaccess \
+ --from-literal=gcs-access-id="YourAccessID" \
+ --from-literal=gcs-private-key="YourPrivateKey"
+```
+Дальше создаем файловые секреты:
+```
+$ kubectl create secret --namespace gitlab-runner generic gitlab-cacerts \
+ --from-file=./ca/ca-certificates.crt
+$ kubectl create secret --namespace gitlab-runner generic gitlab-ca \
+ --from-file=./ca/ca-certificates.crt
+```
+
 ## Start Gitlab runner agent
 Выполняем установку агента (или upgrade) - https://gitlab.fbs-d.com/infra/helms/gke-gitlab-runner, например,
 ```
