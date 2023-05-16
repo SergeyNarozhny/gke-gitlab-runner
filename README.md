@@ -51,6 +51,25 @@ $ kubectl create secret --namespace gitlab-runner generic gitlab-cacerts \
 $ kubectl create secret --namespace gitlab-runner generic gitlab-ca \
  --from-file=./ca/ca-certificates.crt
 ```
+В случае если GKE Gitlab Runners развернут в другой VPC, необходимо сделать форвардинг и пиринг зоны для gl.mx (используется для вытягивания образов с harbor), например:
+```
+$ gcloud dns managed-zones create gl-mx \
+    --description="Forwarding zone for gl.mx" \
+    --dns-name=gl.mx \
+    --networks=fx-prod \
+    --forwarding-targets=FORWARDING_TARGETS_IP_LIST \
+    --visibility=private \
+    --project=fx-prod
+$ gcloud dns managed-zones create peer-gl-mx \
+  --description="DNS peering for gl.mx" \
+  --dns-name=gl.mx \
+  --networks=fx-prod \
+  --target-network=TARGET_NETWORK \
+  --target-project=TARGET_PROJECT \
+  --visibility=private \
+  --project=fx-prod
+```
+И разрешить фаерволом ходить с гуггловских адресов (35.199.192.0/19) на FreeIPA, как например [здесь](https://gitlab.fbs-d.com/terraform/modules/default-firewall-rules/-/blob/master/main.tf#L88).
 
 ## Start Gitlab runner agent
 Выполняем установку агента (или upgrade) - https://gitlab.fbs-d.com/infra/helms/gke-gitlab-runner, например,
