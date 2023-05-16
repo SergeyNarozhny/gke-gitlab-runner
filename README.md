@@ -51,11 +51,18 @@ $ kubectl create secret --namespace gitlab-runner generic gitlab-cacerts \
 $ kubectl create secret --namespace gitlab-runner generic gitlab-ca \
  --from-file=./ca/ca-certificates.crt
 ```
-В случае если GKE Gitlab Runners развернут в другой VPC, необходимо сделать форвардинг и пиринг зоны для gl.mx (используется для вытягивания образов с harbor), например:
+В случае если GKE Gitlab Runners развернут в другой VPC, необходимо сделать форвардинг и пиринг зоны (в случае разных VPC) для **всех** необходимых зон (gl.mx, fbs-d.com), например:
 ```
 $ gcloud dns managed-zones create gl-mx \
     --description="Forwarding zone for gl.mx" \
     --dns-name=gl.mx \
+    --networks=fx-prod \
+    --forwarding-targets=FORWARDING_TARGETS_IP_LIST \
+    --visibility=private \
+    --project=fx-prod
+$ gcloud dns managed-zones create fbs-d \
+    --description="Forwarding zone for fbs-d.com" \
+    --dns-name=fbs-d.com \
     --networks=fx-prod \
     --forwarding-targets=FORWARDING_TARGETS_IP_LIST \
     --visibility=private \
