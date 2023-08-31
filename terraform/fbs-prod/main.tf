@@ -18,7 +18,7 @@ locals {
       cidr_block   = "10.0.0.0/8"
     }
   ]
-  machine_type = "e2-custom-4-8192" // 4vCPU 8G
+  machine_type = "e2-custom-8-16384" // 8vCPU 16G
 }
 
 terraform {
@@ -155,7 +155,7 @@ resource "google_container_node_pool" "gitlab_runners_node_pool" {
   node_locations = local.location_zones
 
   autoscaling {
-    min_node_count = 10
+    min_node_count = 6
     max_node_count = 20
   }
 
