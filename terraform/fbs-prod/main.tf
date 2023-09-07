@@ -177,7 +177,7 @@ resource "google_container_node_pool" "gitlab_runners_node_pool" {
     machine_type    = local.machine_type
     image_type      = "cos_containerd"
     disk_type       = "pd-ssd"
-    disk_size_gb    = 100
+    disk_size_gb    = 500
 
     # Google recommendation
     service_account = data.google_service_account.gitlab_runners_nodes_sa.email
