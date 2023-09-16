@@ -18,7 +18,8 @@ locals {
       cidr_block   = "10.0.0.0/8"
     }
   ]
-  machine_type = "e2-custom-4-8192" // 4vCPU 8G
+  machine_type = "e2-custom-8-16384" // 8vCPU 16G
+  machine_type_preemptible = "e2-custom-4-8192" // 4vCPU 8G
 }
 
 terraform {
@@ -147,21 +148,91 @@ resource "google_container_cluster" "gitlab_runners" {
   }
 }
 
+# On demand
 resource "google_container_node_pool" "gitlab_runners_node_pool" {
   name       = "gitlab-runners-node-pool"
   cluster    = google_container_cluster.gitlab_runners.name
 
   location   = local.location
   node_locations = local.location_zones
+  initial_node_count = 2
 
   autoscaling {
-    min_node_count = 10
+    min_node_count = 2
+    max_node_count = 14
+  }
+
+  management {
+    auto_repair  = true
+    auto_upgrade = true
+  }
+
+  # Pods
+  upgrade_settings {
+    max_surge       = 1
+    max_unavailable = 0
+  }
+
+  node_config {
+    preemptible     = false
+    machine_type    = local.machine_type
+    image_type      = "cos_containerd"
+    disk_type       = "pd-ssd"
+    disk_size_gb    = 500
+
+    # Google recommendation
+    service_account = data.google_service_account.gitlab_runners_nodes_sa.email
+    oauth_scopes    = [
+      "https://www.googleapis.com/auth/cloud-platform"
+    ]
+
+    labels = {
+        env = local.network
+        app = "gitlab"
+        role = "runner"
+        lifecycle = "full"
+    }
+
+    tags = ["gitlab-runner", "common"]
+
+    metadata = {
+      "disable-legacy-endpoints" = "true"
+    }
+
+    shielded_instance_config {
+      enable_integrity_monitoring = true
+      enable_secure_boot          = false
+    }
+  }
+}
+
+# Preemptible
+resource "google_container_node_pool" "gitlab_runners_node_pool_preemptible" {
+  name       = "gitlab-runners-node-pool-preemptible"
+  cluster    = google_container_cluster.gitlab_runners.name
+
+  location   = local.location
+  node_locations = local.location_zones
+
+  autoscaling {
+    min_node_count = 6
     max_node_count = 20
+  }
+
+  management {
+    auto_repair  = true
+    auto_upgrade = true
+  }
+
+  # Pods
+  upgrade_settings {
+    max_surge       = 1
+    max_unavailable = 0
   }
 
   node_config {
     preemptible     = true
-    machine_type    = local.machine_type
+    machine_type    = local.machine_type_preemptible
     image_type      = "cos_containerd"
     disk_type       = "pd-ssd"
     disk_size_gb    = 100
@@ -176,9 +247,19 @@ resource "google_container_node_pool" "gitlab_runners_node_pool" {
         env = local.network
         app = "gitlab"
         role = "runner"
+        lifecycle = "preemptible"
     }
 
-    tags = ["gitlab-runner", "common"]
+    tags = ["gitlab-runner", "common", "preemptible"]
+
+    metadata = {
+      "disable-legacy-endpoints" = "true"
+    }
+
+    shielded_instance_config {
+      enable_integrity_monitoring = true
+      enable_secure_boot          = false
+    }
   }
 }
 
