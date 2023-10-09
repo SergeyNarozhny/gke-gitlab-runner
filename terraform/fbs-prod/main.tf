@@ -18,7 +18,7 @@ locals {
       cidr_block   = "10.0.0.0/8"
     }
   ]
-  machine_type = "e2-custom-8-16384" // 8vCPU 16G
+  machine_type = "e2-standard-8" // 8vCPU 32G
   machine_type_preemptible = "e2-custom-4-8192" // 4vCPU 8G
 }
 
