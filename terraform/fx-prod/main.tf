@@ -155,7 +155,7 @@ resource "google_container_node_pool" "gitlab_runners_node_pool" {
   node_locations = local.location_zones
 
   autoscaling {
-    min_node_count = 3
+    min_node_count = 2
     max_node_count = 20
   }
 
