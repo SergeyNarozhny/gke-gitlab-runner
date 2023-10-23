@@ -6,7 +6,7 @@ locals {
   project = "fx-prod"
   network = "fx-prod"
   location = "asia-southeast2"
-  location_zones = ["asia-southeast2-a", "asia-southeast2-b", "asia-southeast2-c"]
+  location_zones = ["asia-southeast2-a", "asia-southeast2-b"]
   subnetwork = "gitlab-gke"
   master_ipv4_cidr_block = "10.187.34.0/28"
 
@@ -83,7 +83,6 @@ resource "google_container_cluster" "gitlab_runners" {
   datapath_provider             = "ADVANCED_DATAPATH"
   remove_default_node_pool      = true
   enable_intranode_visibility   = true
-  # must be set otherwise breaks the validator
   initial_node_count            = 1
 
   master_authorized_networks_config {
