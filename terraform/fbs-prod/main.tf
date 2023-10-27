@@ -6,7 +6,7 @@ locals {
   project = "fbs-prod"
   network = "common"
   location = "europe-west1" # the cheapest one
-  location_zones = ["europe-west1-b", "europe-west1-d", "europe-west1-c"]
+  location_zones = ["europe-west1-b", "europe-west1-d"]
   subnetwork = "common-gitlab-gke-ew1"
   master_ipv4_cidr_block = "10.157.211.0/28"
 
